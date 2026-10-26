@@ -29,6 +29,21 @@ plt.rcParams.update({
     "figure.titlesize": 14
 })
 
+def salvar_figura(caminho, dpi=300):
+    import time
+    p = Path(caminho).resolve()
+    for tentativa in range(3):
+        try:
+            plt.savefig(str(p), dpi=dpi)
+            plt.close()
+            print(f"Salvo: {p.name}")
+            return
+        except OSError:
+            time.sleep(0.5)
+    plt.savefig(str(p), dpi=dpi)
+    plt.close()
+    print(f"Salvo: {p.name}")
+
 def gerar_graficos():
     caminho_base = Path("data/processed/base_final_modelagem.csv")
     pasta_figuras = Path("resultados/figuras")
@@ -42,7 +57,7 @@ def gerar_graficos():
     print(f"Carregados {len(df):,} registros para análise exploratória.")
 
     # -------------------------------------------------------------
-    # 1. Heatmap de Correlação
+    # 1. Heatmap de Correlação (Inep + IBGE + Censo Escolar)
     # -------------------------------------------------------------
     print("Gerando Heatmap de correlação...")
     cols_corr = [
@@ -50,10 +65,13 @@ def gerar_graficos():
         "ESC_PAI_ANOS",
         "ESC_MAE_ANOS",
         "LOG_RENDA",
+        "PIB_PER_CAPITA",
         "TEM_COMPUTADOR",
         "TEM_INTERNET",
         "ESCOLA_PRIVADA",
         "ESCOLA_URBANA",
+        "IN_LABORATORIO_INFORMATICA",
+        "IN_BIBLIOTECA",
         "COR_RACA_PPI"
     ]
     cols_existentes = [c for c in cols_corr if c in df.columns]
@@ -64,37 +82,38 @@ def gerar_graficos():
         "NU_NOTA_MT": "Nota Matemática",
         "ESC_PAI_ANOS": "Escolaridade Pai",
         "ESC_MAE_ANOS": "Escolaridade Mãe",
-        "LOG_RENDA": "Renda (Log)",
+        "LOG_RENDA": "Renda Familiar (Log)",
+        "PIB_PER_CAPITA": "PIB per capita DF (IBGE)",
         "TEM_COMPUTADOR": "Tem Computador",
         "TEM_INTERNET": "Tem Internet",
         "ESCOLA_PRIVADA": "Escola Privada",
         "ESCOLA_URBANA": "Escola Urbana",
+        "IN_LABORATORIO_INFORMATICA": "Lab. Informática (Escola)",
+        "IN_BIBLIOTECA": "Biblioteca (Escola)",
         "COR_RACA_PPI": "PPI (Pretos/Pardos/Ind.)"
     }
     corr_matrix_renamed = corr_matrix.rename(index=rotulos, columns=rotulos)
 
-    plt.figure(figsize=(9, 7))
+    plt.figure(figsize=(10, 8))
     sns.heatmap(
         corr_matrix_renamed,
         annot=True,
         cmap="coolwarm",
         fmt=".2f",
-        vmin=-0.5,
-        vmax=0.8,
+        vmin=-0.4,
+        vmax=0.7,
         linewidths=0.5,
         cbar_kws={"label": "Coeficiente de Correlação de Pearson"}
     )
-    plt.title("Matriz de Correlação: Fatores Socioeconômicos e Nota de Matemática (DF)", pad=15)
+    plt.title("Matriz de Correlação: Inep (ENEM/Censo) e IBGE (PIB do DF) com Nota de Matemática", pad=15)
     plt.tight_layout()
     caminho_heatmap = pasta_figuras / "heatmap_correlacoes.png"
-    plt.savefig(caminho_heatmap, dpi=300)
-    plt.close()
-    print(f"Salvo: {caminho_heatmap}")
+    salvar_figura(caminho_heatmap)
 
     # -------------------------------------------------------------
-    # 2. Gráfico de Barras: Nota MT por Maior Escolaridade dos Pais e Tipo de Rede
+    # 2. Gráfico de Barras Agrupadas: MEDIANA da Nota MT por Escolaridade dos Pais e Rede
     # -------------------------------------------------------------
-    print("Gerando Gráfico de Barras Agrupadas...")
+    print("Gerando Gráfico de Barras Agrupadas (Mediana por Rede)...")
     df_valid = df.dropna(subset=["MAX_ESC_PAIS", "TP_ESCOLA", "NU_NOTA_MT"]).copy()
     df_valid = df_valid[df_valid["TP_ESCOLA"].isin([2, 3])]
     df_valid["Rede"] = df_valid["TP_ESCOLA"].map({2: "Pública", 3: "Privada"})
@@ -119,22 +138,81 @@ def gerar_graficos():
         hue="Rede",
         order=ordem_esc,
         palette={"Pública": "#3498db", "Privada": "#e74c3c"},
+        estimator=np.median,
         errorbar=None
     )
-    plt.title("Nota Média em Matemática por Maior Escolaridade dos Pais e Rede de Ensino (DF)", pad=15)
+    plt.title("Mediana da Nota em Matemática por Escolaridade dos Pais e Rede de Ensino (DF)", pad=15)
     plt.xlabel("Maior Nível de Escolaridade dos Pais")
-    plt.ylabel("Nota Média em Matemática")
+    plt.ylabel("Mediana da Nota em Matemática")
     plt.xticks(rotation=25, ha="right")
     plt.legend(title="Rede de Ensino", frameon=True)
     plt.ylim(350, 750)
     plt.tight_layout()
-    caminho_barras = pasta_figuras / "barras_nota_por_escolaridade_rede.png"
-    plt.savefig(caminho_barras, dpi=300)
-    plt.close()
-    print(f"Salvo: {caminho_barras}")
+    caminho_barras = pasta_figuras / "barras_mediana_escolaridade_rede.png"
+    salvar_figura(caminho_barras)
 
     # -------------------------------------------------------------
-    # 3. Evolução Histórica das Médias (2021 a 2023)
+    # 3. Gráfico de Barras Agrupadas: MEDIANA por Escolaridade e Localização (Urbana vs Rural)
+    # -------------------------------------------------------------
+    print("Gerando Gráfico de Barras Agrupadas (Mediana por Localização Urbana/Rural)...")
+    df_loc = df.dropna(subset=["MAX_ESC_PAIS", "TP_LOCALIZACAO_ESC", "NU_NOTA_MT"]).copy()
+    df_loc["Localizacao"] = df_loc["TP_LOCALIZACAO_ESC"].map({1: "Urbana", 2: "Rural"})
+    df_loc = df_loc.dropna(subset=["Localizacao"])
+    df_loc["Escolaridade_Rotulo"] = df_loc["MAX_ESC_PAIS"].map(mapa_rotulos_esc)
+
+    if not df_loc.empty:
+        plt.figure(figsize=(11, 6))
+        sns.barplot(
+            data=df_loc,
+            x="Escolaridade_Rotulo",
+            y="NU_NOTA_MT",
+            hue="Localizacao",
+            order=ordem_esc,
+            palette={"Urbana": "#2ecc71", "Rural": "#e67e22"},
+            estimator=np.median,
+            errorbar=None
+        )
+        plt.title("Mediana da Nota em Matemática por Escolaridade dos Pais e Localização da Escola (DF)", pad=15)
+        plt.xlabel("Maior Nível de Escolaridade dos Pais")
+        plt.ylabel("Mediana da Nota em Matemática")
+        plt.xticks(rotation=25, ha="right")
+        plt.legend(title="Localização", frameon=True)
+        plt.ylim(350, 750)
+        plt.tight_layout()
+        caminho_barras_loc = pasta_figuras / "barras_mediana_escolaridade_localizacao.png"
+        salvar_figura(caminho_barras_loc)
+
+    # -------------------------------------------------------------
+    # 4. Gráfico de Barras Agrupadas: MEDIANA por Escolaridade e Acesso Digital (Computador/Internet)
+    # -------------------------------------------------------------
+    print("Gerando Gráfico de Barras Agrupadas (Mediana por Recursos Digitais)...")
+    df_dig = df.dropna(subset=["MAX_ESC_PAIS", "TEM_COMPUTADOR", "NU_NOTA_MT"]).copy()
+    df_dig["Computador"] = df_dig["TEM_COMPUTADOR"].map({1: "Com Computador", 0: "Sem Computador"})
+    df_dig["Escolaridade_Rotulo"] = df_dig["MAX_ESC_PAIS"].map(mapa_rotulos_esc)
+
+    plt.figure(figsize=(11, 6))
+    sns.barplot(
+        data=df_dig,
+        x="Escolaridade_Rotulo",
+        y="NU_NOTA_MT",
+        hue="Computador",
+        order=ordem_esc,
+        palette={"Com Computador": "#9b59b6", "Sem Computador": "#95a5a6"},
+        estimator=np.median,
+        errorbar=None
+    )
+    plt.title("Mediana da Nota em Matemática por Escolaridade dos Pais e Posse de Computador (DF)", pad=15)
+    plt.xlabel("Maior Nível de Escolaridade dos Pais")
+    plt.ylabel("Mediana da Nota em Matemática")
+    plt.xticks(rotation=25, ha="right")
+    plt.legend(title="Recurso Digital", frameon=True)
+    plt.ylim(350, 750)
+    plt.tight_layout()
+    caminho_barras_dig = pasta_figuras / "barras_mediana_escolaridade_computador.png"
+    salvar_figura(caminho_barras_dig)
+
+    # -------------------------------------------------------------
+    # 5. Evolução Histórica das Médias (2021 a 2023)
     # -------------------------------------------------------------
     print("Gerando Evolução Anual...")
     plt.figure(figsize=(8, 5))
@@ -155,9 +233,7 @@ def gerar_graficos():
     plt.legend(title="Rede", frameon=True)
     plt.tight_layout()
     caminho_evolucao = pasta_figuras / "evolucao_desempenho_anos.png"
-    plt.savefig(caminho_evolucao, dpi=300)
-    plt.close()
-    print(f"Salvo: {caminho_evolucao}")
+    salvar_figura(caminho_evolucao)
     print("\nVisualizações exploratórias concluídas com sucesso!")
 
 if __name__ == "__main__":

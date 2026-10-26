@@ -112,9 +112,90 @@ def executar_random_forest():
     print("\nRANKING DE IMPORTÂNCIA DE VARIÁVEIS (FEATURE IMPORTANCE):")
     print(importancias.to_string(index=False))
 
-    # Salvar Tabela
+    # Salvar Tabela de Importâncias
     caminho_tabela = pasta_tabelas / "ranking_importancia_random_forest.csv"
     importancias.to_csv(caminho_tabela, index=False, sep=";", encoding="utf-8")
+
+    # -------------------------------------------------------------
+    # Tabela: Média e Mediana das Notas por Subcategoria (Rubrica UnB)
+    # -------------------------------------------------------------
+    print("\nCalculando média e mediana de notas de Matemática por subcategoria...")
+    linhas_subcategorias = []
+
+    # 1. Rede Escolar
+    mapa_rede = {1: "Federal", 2: "Pública Distrital", 4: "Privada"}
+    df["Rotulo_Rede"] = df["TP_DEPENDENCIA_ADM_ESC"].map(mapa_rede)
+    for subcat, g in df.groupby("Rotulo_Rede")["NU_NOTA_MT"]:
+        linhas_subcategorias.append({
+            "Dimensao": "Rede de Ensino",
+            "Subcategoria": subcat,
+            "Total_Estudantes": len(g),
+            "Nota_Media": round(g.mean(), 2),
+            "Nota_Mediana": round(g.median(), 2),
+            "Desvio_Padrao": round(g.std(), 2)
+        })
+
+    # 2. Escolaridade Máxima dos Pais
+    mapa_rotulos_esc = {
+        0: "Sem estudo",
+        4: "Fundamental I",
+        8: "Fundamental II",
+        9: "Fundamental Completo",
+        12: "Ensino Médio",
+        16: "Ensino Superior",
+        18: "Pós-graduação"
+    }
+    df["Rotulo_Escolaridade"] = df["MAX_ESC_PAIS"].map(mapa_rotulos_esc)
+    for subcat, g in df.groupby("Rotulo_Escolaridade")["NU_NOTA_MT"]:
+        linhas_subcategorias.append({
+            "Dimensao": "Escolaridade Máxima Pais",
+            "Subcategoria": subcat,
+            "Total_Estudantes": len(g),
+            "Nota_Media": round(g.mean(), 2),
+            "Nota_Mediana": round(g.median(), 2),
+            "Desvio_Padrao": round(g.std(), 2)
+        })
+
+    # 3. Posse de Computador
+    df["Rotulo_PC"] = df["TEM_COMPUTADOR"].map({1: "Possui Computador", 0: "Não Possui"})
+    for subcat, g in df.groupby("Rotulo_PC")["NU_NOTA_MT"]:
+        linhas_subcategorias.append({
+            "Dimensao": "Recursos Digitais",
+            "Subcategoria": subcat,
+            "Total_Estudantes": len(g),
+            "Nota_Media": round(g.mean(), 2),
+            "Nota_Mediana": round(g.median(), 2),
+            "Desvio_Padrao": round(g.std(), 2)
+        })
+
+    # 4. Localização da Escola
+    df["Rotulo_Loc"] = df["TP_LOCALIZACAO_ESC"].map({1: "Urbana", 2: "Rural"})
+    for subcat, g in df.dropna(subset=["Rotulo_Loc"]).groupby("Rotulo_Loc")["NU_NOTA_MT"]:
+        linhas_subcategorias.append({
+            "Dimensao": "Localização da Escola",
+            "Subcategoria": subcat,
+            "Total_Estudantes": len(g),
+            "Nota_Media": round(g.mean(), 2),
+            "Nota_Mediana": round(g.median(), 2),
+            "Desvio_Padrao": round(g.std(), 2)
+        })
+
+    # 5. Cor/Raça
+    df["Rotulo_Raca"] = df["COR_RACA_PPI"].map({1: "Pretos/Pardos/Indígenas (PPI)", 0: "Brancos/Amarelos"})
+    for subcat, g in df.groupby("Rotulo_Raca")["NU_NOTA_MT"]:
+        linhas_subcategorias.append({
+            "Dimensao": "Cor / Raça",
+            "Subcategoria": subcat,
+            "Total_Estudantes": len(g),
+            "Nota_Media": round(g.mean(), 2),
+            "Nota_Mediana": round(g.median(), 2),
+            "Desvio_Padrao": round(g.std(), 2)
+        })
+
+    df_subcategorias = pd.DataFrame(linhas_subcategorias)
+    caminho_subcat = pasta_tabelas / "medias_notas_por_subcategoria.csv"
+    df_subcategorias.to_csv(caminho_subcat, index=False, sep=";", encoding="utf-8")
+    print(f"Tabela de médias e medianas por subcategoria salva em: {caminho_subcat}")
 
     # Gráfico de Barras Horizontal
     plt.figure(figsize=(10, 6))
@@ -122,6 +203,8 @@ def executar_random_forest():
         data=importancias,
         x="Percentual",
         y="Atributo",
+        hue="Atributo",
+        legend=False,
         palette="Blues_r"
     )
     plt.title("Ranking de Importância das Variáveis no Desempenho em Matemática (DF)", pad=15)
@@ -133,10 +216,18 @@ def executar_random_forest():
     plt.tight_layout()
 
     caminho_figura = pasta_figuras / "ranking_importancia_variaveis.png"
-    plt.savefig(caminho_figura, dpi=300)
-    plt.close()
-    print(f"\nGráfico do ranking salvo em: {caminho_figura}")
-    return rf, importancias
+    p = Path(caminho_figura).resolve()
+    for tentativa in range(3):
+        try:
+            plt.savefig(str(p), dpi=300)
+            plt.close()
+            print(f"\nGráfico do ranking salvo em: {p.name}")
+            break
+        except OSError:
+            import time
+            time.sleep(0.5)
+
+    return rf, importancias, df_subcategorias
 
 if __name__ == "__main__":
     executar_random_forest()

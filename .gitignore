@@ -1,3 +1,18 @@
+# Arquivos brutos compactados volumosos (não subir no GitHub > 100MB)
 *.zip
 2021-2023/
 2023 - 2025/
+
+# Ambientes virtuais e Python
+venv/
+.venv/
+env/
+__pycache__/
+*.pyc
+*.pyo
+
+# IDEs e Sistema Operacional
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

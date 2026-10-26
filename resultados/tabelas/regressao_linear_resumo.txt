@@ -1,0 +1,40 @@
+                            OLS Regression Results                            
+==============================================================================
+Dep. Variable:             NU_NOTA_MT   R-squared:                       0.278
+Model:                            OLS   Adj. R-squared:                  0.278
+Method:                 Least Squares   F-statistic:                     4079.
+Date:                Mon, 26 Oct 2026   Prob (F-statistic):               0.00
+Time:                        19:16:56   Log-Likelihood:            -7.7635e+05
+No. Observations:              126874   AIC:                         1.553e+06
+Df Residuals:                  126861   BIC:                         1.553e+06
+Df Model:                          12                                         
+Covariance Type:            nonrobust                                         
+==================================================================================
+                     coef    std err          t      P>|t|      [0.025      0.975]
+----------------------------------------------------------------------------------
+const            373.1273      2.175    171.579      0.000     368.865     377.390
+ESC_PAI_ANOS       4.0829      0.088     46.205      0.000       3.910       4.256
+ESC_MAE_ANOS       3.6550      0.094     38.913      0.000       3.471       3.839
+LOG_RENDA         13.5109      0.219     61.666      0.000      13.081      13.940
+TEM_COMPUTADOR    27.4620      0.840     32.700      0.000      25.816      29.108
+TEM_INTERNET      -6.2313      1.695     -3.676      0.000      -9.554      -2.909
+ESCOLA_PRIVADA    44.2009      1.154     38.314      0.000      41.940      46.462
+ESCOLA_FEDERAL    45.3899      2.531     17.932      0.000      40.429      50.351
+ESCOLA_URBANA    -34.1554      0.823    -41.525      0.000     -35.768     -32.543
+COR_RACA_PPI     -24.1921      0.652    -37.112      0.000     -25.470     -22.914
+SEXO_FEMININO    -32.8490      0.638    -51.511      0.000     -34.099     -31.599
+ANO_2022           7.3836      0.771      9.572      0.000       5.872       8.895
+ANO_2023           7.1276      0.753      9.467      0.000       5.652       8.603
+==============================================================================
+Omnibus:                     4536.525   Durbin-Watson:                   1.978
+Prob(Omnibus):                  0.000   Jarque-Bera (JB):             9755.537
+Skew:                          -0.235   Prob(JB):                         0.00
+Kurtosis:                       4.274   Cond. No.                         167.
+==============================================================================
+
+Notes:
+[1] Standard Errors assume that the covariance matrix of the errors is correctly specified.
+
+R² do Modelo: 0.2784
+R² Ajustado: 0.2783
+Número de Observações (N): 126874.0

@@ -16,20 +16,34 @@ import zipfile
 import pandas as pd
 from pathlib import Path
 
-# Configuração dos caminhos dos arquivos ZIP e caminhos internos dos CSVs
-ARQUIVOS_CONFIG = {
-    2021: {
-        "zip_path": Path("2021-2023/2021/microdados_enem_2021.zip"),
-        "csv_name": "DADOS/MICRODADOS_ENEM_2021.csv"
-    },
-    2022: {
-        "zip_path": Path("2021-2023/2022 E 2023/microdados_enem_2022.zip"),
-        "csv_name": "DADOS/MICRODADOS_ENEM_2022.csv"
-    },
-    2023: {
-        "zip_path": Path("2021-2023/2022 E 2023/microdados_enem_2023.zip"),
-        "csv_name": "microdados_enem_2023/DADOS/MICRODADOS_ENEM_2023.csv"
-    }
+# Função auxiliar para localizar o arquivo ZIP em caminhos possíveis
+def localizar_zip(nome_padrao, caminhos_candidatos):
+    for c in caminhos_candidatos:
+        p = Path(c)
+        if p.exists():
+            return p
+    # Busca recursiva se não achou direto
+    for match in Path(".").glob(f"**/{nome_padrao}"):
+        if match.is_file():
+            return match
+    return None
+
+CANDIDATOS_ENEM = {
+    2021: [
+        "microdados_enem_2021.zip",
+        "data/raw/microdados_enem_2021.zip",
+        "2021-2023/2021/microdados_enem_2021.zip"
+    ],
+    2022: [
+        "microdados_enem_2022.zip",
+        "data/raw/microdados_enem_2022.zip",
+        "2021-2023/2022 E 2023/microdados_enem_2022.zip"
+    ],
+    2023: [
+        "microdados_enem_2023.zip",
+        "data/raw/microdados_enem_2023.zip",
+        "2021-2023/2022 E 2023/microdados_enem_2023.zip"
+    ]
 }
 
 COLUNAS_SELECIONADAS = [
@@ -56,16 +70,16 @@ COLUNAS_SELECIONADAS = [
     "Q025"   # Internet
 ]
 
-def filtrar_ano(ano, config, chunksize=100000):
-    zip_path = config["zip_path"]
-    csv_name = config["csv_name"]
+def filtrar_ano(ano, candidatos, chunksize=100000):
+    nome_zip = f"microdados_enem_{ano}.zip"
+    zip_path = localizar_zip(nome_zip, candidatos)
     
-    if not zip_path.exists():
-        print(f"[ALERTA] Arquivo ZIP do ano {ano} não encontrado em: {zip_path}")
+    if not zip_path:
+        print(f"[ALERTA] Arquivo ZIP do ano {ano} não encontrado.")
         return None
         
     print(f"\n" + "=" * 60)
-    print(f"Processando ENEM {ano} a partir de: {zip_path.name}")
+    print(f"Processando ENEM {ano} a partir de: {zip_path}")
     print(f"=" * 60)
     
     chunks_df = []
@@ -73,6 +87,18 @@ def filtrar_ano(ano, config, chunksize=100000):
     total_df = 0
 
     with zipfile.ZipFile(zip_path, "r") as z:
+        # Detectar o arquivo de microdados dentro do zip
+        alvos_csv = [f for f in z.namelist() if f.lower().endswith(f"microdados_enem_{ano}.csv")]
+        if not alvos_csv:
+            # Fallback para qualquer CSV que contenha MICRODADOS_ENEM
+            alvos_csv = [f for f in z.namelist() if "microdados_enem" in f.lower() and f.lower().endswith(".csv")]
+        if not alvos_csv:
+            print(f"[ERRO] Nenhum CSV de microdados encontrado dentro de {zip_path.name}")
+            return None
+        
+        csv_name = alvos_csv[0]
+        print(f"Lendo internamente: {csv_name}")
+
         with z.open(csv_name) as f:
             for chunk in pd.read_csv(
                 f,
@@ -110,8 +136,8 @@ def executar_filtragem_completa():
     dfs_anos = []
     Path("data/processed").mkdir(parents=True, exist_ok=True)
     
-    for ano, cfg in ARQUIVOS_CONFIG.items():
-        df_ano = filtrar_ano(ano, cfg)
+    for ano, candidatos in CANDIDATOS_ENEM.items():
+        df_ano = filtrar_ano(ano, candidatos)
         if df_ano is not None:
             caminho_ano = Path(f"data/processed/enem_df_{ano}.csv")
             df_ano.to_csv(caminho_ano, sep=";", index=False, encoding="utf-8")

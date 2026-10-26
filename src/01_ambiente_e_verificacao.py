@@ -47,21 +47,23 @@ def verificar_ambiente():
 
 def verificar_arquivos_dados():
     print("=" * 70)
-    print("2. VERIFICANDO ARQUIVOS EM data/raw/ :")
+    print("2. VERIFICANDO ARQUIVOS DE DADOS (ZIPS E PLANILHAS):")
     print("=" * 70)
-    pasta_raw = Path("data/raw")
-    if not pasta_raw.exists():
-        print("Pasta data/raw ainda não foi criada.")
-        return
-
-    arquivos = list(pasta_raw.glob("*"))
-    if not arquivos:
-        print("A pasta 'data/raw' está vazia.")
-        print("Aqui colocaremos os arquivos baixados do Inep (ENEM, Censo, INSE) e do IBGE.")
+    pastas_para_olhar = [Path("."), Path("data/raw"), Path("2021-2023")]
+    zips_encontrados = {}
+    
+    for pasta in pastas_para_olhar:
+        if pasta.exists():
+            for arq in pasta.glob("*.zip"):
+                if arq.name not in zips_encontrados:
+                    zips_encontrados[arq.name] = arq
+                    
+    if not zips_encontrados:
+        print("Nenhum arquivo .zip encontrado na raiz ou em data/raw/.")
     else:
-        for arq in arquivos:
-            tamanho_mb = arq.stat().st_size / (1024 * 1024)
-            print(f" - {arq.name} ({tamanho_mb:.2f} MB)")
+        for nome, caminho in sorted(zips_encontrados.items()):
+            tamanho_mb = caminho.stat().st_size / (1024 * 1024)
+            print(f" [ENCONTRADO] {nome.ljust(35)} ({tamanho_mb:6.1f} MB) em {caminho.parent}")
     print("=" * 70)
 
 if __name__ == "__main__":

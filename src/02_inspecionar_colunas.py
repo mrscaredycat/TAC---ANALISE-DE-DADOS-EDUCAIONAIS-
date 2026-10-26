@@ -15,39 +15,34 @@ import zipfile
 import pandas as pd
 from pathlib import Path
 
-ARQUIVOS_CONFIG = {
-    2021: {
-        "enem_zip": Path("2021-2023/2021/microdados_enem_2021.zip"),
-        "enem_csv": "DADOS/MICRODADOS_ENEM_2021.csv",
-        "censo_zip": Path("2021-2023/2021/microdados_censo_escolar_2021.zip"),
-        "censo_csv": "microdados_ed_basica_2021/dados/microdados_ed_basica_2021.csv"
-    },
-    2022: {
-        "enem_zip": Path("2021-2023/2022 E 2023/microdados_enem_2022.zip"),
-        "enem_csv": "DADOS/MICRODADOS_ENEM_2022.csv",
-        "censo_zip": Path("2021-2023/2022 E 2023/microdados_censo_escolar_2022.zip"),
-        "censo_csv": "Microdados do Censo Escolar da Educaç╞o Básica 2022/dados/microdados_ed_basica_2022.csv"
-    },
-    2023: {
-        "enem_zip": Path("2021-2023/2022 E 2023/microdados_enem_2023.zip"),
-        "enem_csv": "microdados_enem_2023/DADOS/MICRODADOS_ENEM_2023.csv",
-        "censo_zip": Path("2021-2023/2022 E 2023/microdados_censo_escolar_2023.zip"),
-        "censo_csv": "microdados_censo_escolar_2023/dados/microdados_ed_basica_2023.csv"
-    }
-}
+def localizar_zip(nome_padrao, caminhos_candidatos):
+    for c in caminhos_candidatos:
+        p = Path(c)
+        if p.exists():
+            return p
+    for match in Path(".").glob(f"**/{nome_padrao}"):
+        if match.is_file():
+            return match
+    return None
 
 def inspecionar_enem():
     print("=" * 70)
     print("COLUNAS DO ENEM (2021, 2022 e 2023)")
     print("=" * 70)
-    for ano, cfg in ARQUIVOS_CONFIG.items():
-        if cfg["enem_zip"].exists():
-            with zipfile.ZipFile(cfg["enem_zip"], "r") as z:
-                with z.open(cfg["enem_csv"]) as f:
-                    df = pd.read_csv(f, sep=";", encoding="latin1", nrows=2)
-                    print(f"\nAno {ano}: Encontradas {len(df.columns)} colunas.")
+    for ano in [2021, 2022, 2023]:
+        nome_zip = f"microdados_enem_{ano}.zip"
+        zip_path = localizar_zip(nome_zip, [nome_zip, f"data/raw/{nome_zip}", f"2021-2023/2021/{nome_zip}", f"2021-2023/2022 E 2023/{nome_zip}"])
+        if zip_path and zip_path.exists():
+            with zipfile.ZipFile(zip_path, "r") as z:
+                alvos = [f for f in z.namelist() if f.lower().endswith(f"microdados_enem_{ano}.csv")]
+                if not alvos:
+                    alvos = [f for f in z.namelist() if "microdados_enem" in f.lower() and f.lower().endswith(".csv")]
+                if alvos:
+                    with z.open(alvos[0]) as f:
+                        df = pd.read_csv(f, sep=";", encoding="latin1", nrows=2)
+                        print(f"\nAno {ano} ({zip_path.name}): {len(df.columns)} colunas identificadas.")
         else:
-            print(f"Arquivo do ENEM {ano} não encontrado em {cfg['enem_zip']}")
+            print(f"Arquivo do ENEM {ano} não encontrado.")
 
 if __name__ == "__main__":
     inspecionar_enem()

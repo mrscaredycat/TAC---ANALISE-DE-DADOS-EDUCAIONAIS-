@@ -1,0 +1,267 @@
+\documentclass[11pt,a4paper]{article}
+
+% --- Pacotes Fundamentais ---
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[brazil]{babel}
+\usepackage{lmodern}
+\usepackage[top=2.5cm, bottom=2.5cm, left=2.5cm, right=2.5cm]{geometry}
+
+% --- Tipografia e Matemática ---
+\usepackage{amsmath, amssymb, amsfonts}
+\usepackage{microtype}
+\usepackage{booktabs}
+\usepackage{array}
+
+% --- Imagens e Gráficos ---
+\usepackage{graphicx}
+\graphicspath{{figures/}} % Pasta onde estão as imagens no Overleaf
+
+% --- Legendas e Formatação de Tabelas/Figuras ---
+\usepackage{caption}
+\captionsetup{
+  font=small,
+  labelfont=bf,
+  labelsep=period,
+  skip=6pt
+}
+
+% --- Hiperlinks ---
+\usepackage[hidelinks,pdfencoding=auto]{hyperref}
+
+% --- Informações do Cabeçalho ---
+\title{\textbf{Fatores Socioeconômicos, Escolares e Territoriais no Desempenho em Matemática no ENEM no Distrito Federal (2021--2023)}}
+\author{
+  Trabalho de Análise de Dados Educacionais \\
+  Universidade de Brasília (UnB)
+}
+\date{}
+
+\begin{document}
+
+\maketitle
+
+% ==============================================================================
+% RESUMO E PALAVRAS-CHAVE
+% ==============================================================================
+\begin{abstract}
+O Exame Nacional do Ensino Médio (ENEM) é a principal porta de entrada para o ensino superior no Brasil, e seus resultados costumam refletir profundas desigualdades socioeconômicas e educacionais. Este trabalho investiga como fatores familiares (escolaridade dos pais), escolares (rede, localização e infraestrutura) e o contexto econômico do Distrito Federal se associam ao desempenho em Matemática dos estudantes do DF no ENEM no triênio 2021--2023, analisando em que medida essas relações variam entre grupos e contextos. Utilizam-se os microdados abertos do ENEM, do Censo Escolar da Educação Básica e os Indicadores Educacionais das Escolas (Inep), articulados aos dados de PIB per capita do IBGE. A metodologia combina exploração visual (mapas de calor e gráficos de barras agrupadas), regressão linear múltipla (OLS) e aprendizado de máquina supervisionado via \textit{Random Forest Regressor}, tendo a proficiência em Matemática como variável dependente. O modelo econométrico demonstra que mais de um quarto da variabilidade das notas decorre de variáveis estruturais ($R^2 = 0{,}2784$), enquanto o modelo preditivo não linear aponta que a renda familiar e o capital cultural dos pais somam mais de 80\% da importância preditiva global. Os achados fornecem subsídios empíricos essenciais para discussões sobre equidade na educação básica e no acesso aos cursos de ciências exatas e tecnologia.
+\end{abstract}
+
+\vspace{0.5em}
+\noindent\textbf{Palavras-chave:} ENEM; Matemática; desigualdade educacional; nível socioeconômico; mineração de dados educacionais; Random Forest.
+
+\vspace{1.5em}
+
+% ==============================================================================
+% 1. INTRODUÇÃO
+% ==============================================================================
+\section{Introdução}
+
+O Exame Nacional do Ensino Médio (ENEM), criado em 1998, consolidou-se como o principal mecanismo de acesso ao ensino superior brasileiro, sendo utilizado por universidades públicas via Sistema de Seleção Unificada (SISU) e por programas governamentais como ProUni e Fies. Por reunir milhões de participantes anualmente, o exame constitui uma das fontes mais abrangentes para investigar o rendimento acadêmico ao término da educação básica e as assimetrias estruturais que condicionam a trajetória dos concluintes.
+
+A literatura especializada demonstra consistentemente que o desempenho no certame ultrapassa a dimensão do esforço estritamente individual. Estudos fundamentados nos microdados do exame revelam que a pontuação se correlaciona intensamente com a herança familiar, o segmento escolar frequentado e o acesso a insumos materiais e tecnológicos. Em paralelo, abordagens recentes vêm aplicando técnicas de aprendizado de máquina sobre essas bases para discriminar padrões em recortes regionais. Nesse espectro, a escolaridade dos genitores sobressai de forma recorrente como um dos principais determinantes do êxito discente.
+
+No panorama educacional brasileiro, o hiato entre escolas públicas e privadas figura como um dos eixos de maior relevância analítica. No PISA 2018, as instituições particulares registraram médias substancialmente superiores às públicas nas três áreas avaliadas (OECD, 2019), padrão corroborado domesticamente por Moraes e Belluzzo (2014). Esse diferencial motivou políticas compensatórias, como a Lei de Cotas (Lei nº 12.711/2012), que democratizou o ingresso de egressos da rede pública no ensino superior federal. Contudo, pesquisas longitudinais indicam que deficiências no preparo prévio e carências socioeconômicas continuam impactando a permanência e a taxa de evasão após o ingresso, reforçando a urgência em diagnosticar essas disparidades na sua gênese formativa.
+
+O Distrito Federal (DF) oferece um laboratório social de interesse ímpar: concentra uma das maiores rendas per capita do país ao lado de uma acentuada segregação socioespacial entre suas Regiões Administrativas (RAs), com sistemas público e privado convivendo em um mesmo território delimitado. Tal configuração viabiliza o isolamento de efeitos estruturais sem a dispersão geográfica das macrorregiões nacionais.
+
+Optou-se por examinar com exclusividade a proficiência em Matemática em razão de sua conexão direta com a educação em computação e áreas de base científica. O domínio instrumental quantitativo atua como filtro de retenção precoce no ensino superior. Assim, a questão norteadora deste trabalho formula-se como: \textit{De que maneira fatores socioeconômicos, familiares e infraestruturais escolares se associam ao rendimento em Matemática no ENEM no DF, e em que magnitude essas relações hierarquizam a probabilidade de desempenho?}
+
+Para respondê-la, articula-se uma abordagem empírica tripartite: exploração visual descritiva, modelagem paramétrica por regressão linear múltipla (OLS) e modelagem não linear supervisionada por \textit{Random Forest Regressor}.
+
+% ==============================================================================
+% 2. BACKGROUND E TRABALHOS RELACIONADOS
+% ==============================================================================
+\section{Background}
+
+\subsection{Origem Social, Escola e Desigualdade de Desempenho}
+A tese de que os resultados acadêmicos espelham a estratificação de classes remonta à tradição sociológica contemporânea. Bourdieu e Passeron (1970) concebem a instituição escolar como um vetor de reprodução social mediado pelo capital cultural familiar. Nesse referencial, o nível educacional dos pais funciona como aproximação desse capital e do suporte doméstico à aprendizagem, revelando coeficientes robustos e significativos em estudos econométricos com dados educacionais brasileiros.
+
+\subsection{Rede, Localização e Infraestrutura Escolar}
+Além da retaguarda familiar, as variáveis institucionais desempenham papel fulcral. O diferencial entre redes pública e privada decorre tanto da autoseleção socioeconômica dos discentes quanto da infraestrutura pedagógica disponibilizada. Indicadores sintetizados pelo Inep, tais como o Indicador de Nível Socioeconômico (INSE), o Indicador de Adequação da Formação Docente e o Esforço Docente, bem como a presença de laboratórios de informática e conectividade, compõem a matriz de fatores escolares relevantes.
+
+\subsection{Contexto Territorial e Econômico}
+O território de moradia e de localização da unidade de ensino impõe limites objetivos ao desenvolvimento individual. No Distrito Federal, os contrastes entre Plano Piloto e as Regiões Administrativas periféricas refletem diferenças brutais na renda domiciliar e na oferta de serviços públicos. A integração de variáveis de PIB per capita e geolocalização assegura a captura desses efeitos de vizinhança.
+
+\subsection{Mineração de Dados Educacionais e Modelos Preditivos}
+A Mineração de Dados Educacionais (\textit{Educational Data Mining} -- EDM) utiliza algoritmos estatísticos e computacionais para extrair padrões a partir de bases complexas. Neste estudo, a regressão OLS assegura interpretabilidade direta e mensuração de efeitos marginais condicionais (\textit{ceteris paribus}). Em contrapartida, o \textit{Random Forest} lida nativamente com interações de alta ordem e não linearidades, ranqueando a importância global dos atributos pelo critério de pureza de nós.
+
+\subsection{Trabalhos Relacionados: O Contexto da Universidade de Brasília (UnB)}
+No âmbito regional, destaca-se a pesquisa seminal de Silveira, Holanda e Ramos (2022), intitulada \textit{"Analysis of Student Performance and Social-economic Data in Introductory Computer Science Courses at the University of Brasília"}, apresentada na conferência internacional IEEE FIE. Os autores examinaram calouros das disciplinas introdutórias de programação (CS1) dos quatro cursos de computação da UnB entre 2012 e 2019. 
+
+Constatou-se que egressos da rede privada exibiram desempenho superior estatisticamente significante em programação ($\beta = +0{,}796$), enquanto a vulnerabilidade socioeconômica correlacionou-se negativamente à aprovação ($\beta = -0{,}768$). Silveira et al. (2022) demonstraram que a retenção e o insucesso discente inicial encontram raízes em lacunas analíticas não supridas durante o ensino médio. O presente estudo conecta-se estrategicamente a esse diagnóstico ao focar o estágio anterior: a filtragem de proficiência em Matemática no próprio ENEM distrital.
+
+% ==============================================================================
+% 3. METODOLOGIA
+% ==============================================================================
+\section{Metodologia}
+
+\subsection{Amostra e Coleta em Streaming}
+A base empírica foi composta pela junção dos microdados do ENEM (2021--2023), do Censo Escolar da Educação Básica e do PIB dos Municípios do IBGE. Em razão do volume massivo dos arquivos originais, desenvolveu-se uma rotina em Python baseada no protocolo de leitura em fluxo contínuo (\textit{streaming} em blocos de $100.000$ registros), permitindo a ingestão e a filtragem direta dos pacotes compactados (\texttt{.zip}) sem descompressão completa em disco.
+
+A delimitação da coorte atendeu a três critérios de elegibilidade:
+\begin{enumerate}
+  \item Realização da prova no Distrito Federal (\texttt{SG\_UF\_PROVA == 'DF'});
+  \item Presença integral no segundo dia de prova (\texttt{TP\_PRESENCA\_MT == 1}) com nota válida em Matemática;
+  \item Preenchimento das variáveis socioeconômicas indispensáveis no questionário discente.
+\end{enumerate}
+A coorte final consolidada totalizou $N = 126.874$ observações.
+
+\subsection{Variáveis e Engenharia de Atributos}
+A variável dependente ($Y$) é a proficiência em Matemática e suas Tecnologias (\texttt{NU\_NOTA\_MT}). Os preditores ($X$) englobaram:
+\begin{itemize}
+  \item \textbf{Capital Cultural Familiar:} Anos formais de instrução do pai (\texttt{Q001}) e da mãe (\texttt{Q002}), mapeados de 0 (sem escolaridade) a 18 (pós-graduação), calculando-se também a Maior Escolaridade dos Pais (\texttt{MAX\_ESC\_PAIS});
+  \item \textbf{Renda Familiar Mensal:} Transformação da faixa de renda (\texttt{Q006}) em valor monetário contínuo e aplicação de escala logarítmica ($\log(\text{Renda})$) para normalização residual;
+  \item \textbf{Inclusão Digital e Recursos:} Variáveis binárias para posse de computador (\texttt{Q024}) e conexão à internet (\texttt{Q025});
+  \item \textbf{Perfil Institucional e Controle:} Dummies de rede escolar (Privada, Federal, Pública Distrital), localização (Urbana/Rural), pertencimento étnico-racial (PPI) e sexo.
+\end{itemize}
+
+\subsection{Modelagem Estatística e Preditiva}
+A estratégia empírica divide-se em duas abordagens convergentes:
+\begin{enumerate}
+  \item \textbf{Regressão Linear Múltipla (OLS):} Para inferência paramétrica, obtenção de coeficientes estruturais padronizados e testes de hipótese bicaudais com nível de significância de $\alpha = 0{,}05$;
+  \item \textbf{Random Forest Regressor:} Composto por 100 estimadores (\textit{trees}) e profundidade máxima parametrizada em $\text{max\_depth} = 15$. A base foi repartida em 70\% para calibração ($N = 88.811$) e 30\% para avaliação cega de generalização ($N = 38.063$), medindo-se a importância preditiva via \textit{Mean Decrease in Impurity} (MDI).
+\end{enumerate}
+
+% ==============================================================================
+% 4. RESULTADOS E DISCUSSÃO
+% ==============================================================================
+\section{Resultados e Discussão}
+
+\subsection{Análise Exploratória e Visual}
+
+A Figura~\ref{fig:heatmap} exibe a matriz de correlação de Pearson entre as variáveis socioeconômicas, estruturais e a proficiência obtida em Matemática. Constatam-se correlações positivas expressivas entre o rendimento quantitativo e a Renda Familiar Mensal ($r = 0{,}47$), a Escolaridade Paterna ($r = 0{,}38$), a Escolaridade Materna ($r = 0{,}36$) e o acesso a computador doméstico ($r = 0{,}33$), enquanto a condição PPI exibe associação negativa ($r = -0{,}26$).
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.72\textwidth]{figures/heatmap_correlacoes.png}
+  \caption{Matriz de Correlação de Pearson: Variáveis Inep, IBGE e Nota de Matemática.}
+  \label{fig:heatmap}
+\end{figure}
+
+Na Figura~\ref{fig:barras_rede}, investiga-se a mediana das notas em Matemática controlada simultaneamente pela rede escolar e pelo nível instrucional dos pais. Evidencia-se que alunos da rede pública de genitores sem instrução atingem mediana de $435{,}5$ pontos, ao passo que filhos de pais com pós-graduação chegam a $565{,}0$ pontos. Não obstante, o segmento privado propicia um acréscimo acentuado em qualquer faixa socioeducacional, situando a mediana global privada em $629{,}9$ pontos contra $501{,}3$ da rede distrital.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.72\textwidth]{figures/barras_mediana_escolaridade_rede.png}
+  \caption{Mediana em Matemática por Maior Escolaridade dos Pais e Rede de Ensino no DF.}
+  \label{fig:barras_rede}
+\end{figure}
+
+A Figura~\ref{fig:barras_computador} ressalta o impacto da inclusão digital domiciliar. Os participantes que dispõem de computador registram mediana de $575{,}5$ pontos, contrastando com os $474{,}3$ pontos daqueles destituídos do dispositivo, o que representa um desnível líquido de $101{,}2$ pontos.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.72\textwidth]{figures/barras_mediana_escolaridade_computador.png}
+  \caption{Mediana em Matemática por Escolaridade dos Pais e Posse de Computador no DF.}
+  \label{fig:barras_computador}
+\end{figure}
+
+\subsection{Efeitos Marginais: Regressão Linear Múltipla}
+
+A Tabela~\ref{tab:regressao_ols} reporta os parâmetros obtidos pelo estimador OLS. O modelo alcançou coeficiente de determinação $R^2 = 0{,}2784$ com teste $F = 4.079$ ($p < 0{,}001$), demonstrando que mais de 27\% da oscilação das notas advém exclusivamente dos determinantes socioestruturais modelados.
+
+\begin{table}[htbp]
+  \centering
+  \small
+  \caption{Coeficientes da Regressão Linear Múltipla OLS ($R^2 = 0{,}2784$, $N = 126.874$).}
+  \label{tab:regressao_ols}
+  \begin{tabular}{l rrrr}
+    \toprule
+    \textbf{Variável} & \textbf{Coef. ($\beta$)} & \textbf{Erro Padrão} & \textbf{Estatística $t$} & \textbf{$p$-valor} \\
+    \midrule
+    Intercepto ($\beta_0$)      & $373{,}13$ & $2{,}17$ & $171{,}6$ & $< 0{,}001$ \\
+    \addlinespace
+    Escolaridade Pai (anos)     & $+4{,}08$  & $0{,}09$ & $46{,}2$  & $< 0{,}001$ \\
+    Escolaridade Mãe (anos)     & $+3{,}65$  & $0{,}09$ & $38{,}9$  & $< 0{,}001$ \\
+    $\log(\text{Renda})$        & $+13{,}51$ & $0{,}22$ & $61{,}7$  & $< 0{,}001$ \\
+    Possui Computador           & $+27{,}46$ & $0{,}84$ & $32{,}7$  & $< 0{,}001$ \\
+    Escola Privada              & $+44{,}20$ & $1{,}15$ & $38{,}3$  & $< 0{,}001$ \\
+    Escola Federal (IFB)        & $+45{,}39$ & $2{,}53$ & $17{,}9$  & $< 0{,}001$ \\
+    Cor/Raça PPI                & $-24{,}19$ & $0{,}65$ & $-37{,}1$ & $< 0{,}001$ \\
+    Sexo Feminino               & $-32{,}85$ & $0{,}64$ & $-51{,}5$ & $< 0{,}001$ \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+A análise econométrica certifica que cada ano adicional de estudo do pai e da mãe agrega, respectivamente, $+4{,}08$ e $+3{,}65$ pontos fixos à nota do candidato. Destaca-se ainda o expressivo prêmio escolar decorrente das redes privada ($+44{,}20$ pontos) e federal ($+45{,}39$ pontos) em relação à rede pública distrital, ratificando a existência de um efeito institucional substancial mesmo após o controle integral pela renda e pelo capital cultural da família.
+
+\subsection{Preditores Não Lineares e Ranking: Random Forest}
+
+Na amostra de teste (30\%), o modelo baseado em \textit{Random Forest} obteve $R^2 = 0{,}2896$ com Erro Absoluto Médio (MAE) de $85{,}60$ pontos. A Figura~\ref{fig:ranking_rf} sintetiza o ordenamento de relevância dos preditores obtido pelo algoritmo. A Renda Familiar desponta isolada na liderança com 64,05\% do peso total, seguida pela instrução paterna (8,22\%) e materna (7,79\%), convergindo para 16,01\% atribuídos diretamente ao capital cultural familiar.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.72\textwidth]{figures/ranking_importancia_variaveis.png}
+  \caption{Ranking de Importância de Variáveis via Random Forest Regressor (MDI).}
+  \label{fig:ranking_rf}
+\end{figure}
+
+Por fim, a Tabela~\ref{tab:descritiva_subgrupos} detalha o comportamento médio e mediano das notas de Matemática desagregadas pelos estratos sociodemográficos e acadêmicos de maior proeminência no Distrito Federal.
+
+\begin{table}[htbp]
+  \centering
+  \small
+  \caption{Estatísticas Descritivas da Nota de Matemática por Subgrupo no DF ($N = 126.874$).}
+  \label{tab:descritiva_subgrupos}
+  \begin{tabular}{l rrr}
+    \toprule
+    \textbf{Dimensão / Subcategoria} & \textbf{$N$} & \textbf{Média} & \textbf{Mediana} \\
+    \midrule
+    \multicolumn{4}{l}{\textit{\textbf{Dependência Administrativa (Rede)}}} \\
+    \quad Rede Privada             & $18.377$  & $621{,}1$ & $629{,}9$ \\
+    \quad Rede Federal (IFB)       & $2.207$   & $601{,}0$ & $600{,}5$ \\
+    \quad Rede Pública Distrital   & $26.063$  & $511{,}6$ & $501{,}3$ \\
+    \addlinespace
+    \multicolumn{4}{l}{\textit{\textbf{Maior Escolaridade dos Pais}}} \\
+    \quad Pós-graduação            & $39.018$  & $623{,}7$ & $633{,}9$ \\
+    \quad Ensino Superior          & $27.731$  & $586{,}2$ & $588{,}1$ \\
+    \quad Ensino Médio             & $42.617$  & $521{,}1$ & $509{,}5$ \\
+    \quad Sem estudo               & $1.574$   & $448{,}8$ & $435{,}5$ \\
+    \addlinespace
+    \multicolumn{4}{l}{\textit{\textbf{Acesso a Dispositivos Digitais}}} \\
+    \quad Possui Computador        & $105.100$ & $578{,}0$ & $575{,}5$ \\
+    \quad Não Possui Computador    & $35.349$  & $487{,}5$ & $474{,}3$ \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+% ==============================================================================
+% 5. CONCLUSÃO
+% ==============================================================================
+\section{Conclusão}
+
+Este trabalho investigou os determinantes socioeconômicos e escolares do desempenho em Matemática no ENEM no Distrito Federal no período de 2021 a 2023. A integração entre regressão econométrica e aprendizado de máquina comprovou que as circunstâncias familiares e o acesso à infraestrutura exercem influência condicionante imperativa sobre os resultados educacionais: a renda domiciliar combinada à escolaridade parental responde por mais de 80\% da capacidade preditiva sobre a proficiência discente.
+
+Ao articular esses resultados à literatura especializada da Universidade de Brasília, com ênfase no diagnóstico de Silveira et al. (2022) sobre reprovação e evasão discente no Departamento de Ciência da Computação (CIC/UnB), o estudo evidencia que os obstáculos de rendimento vivenciados nos semestres iniciais dos cursos de exatas e tecnologia originam-se em déficits estruturais da educação básica. A equalização de oportunidades no ensino superior depende impreterivelmente de intervenções distributivas prévias, tais como a mitigação do abismo de infraestrutura entre as redes de ensino e a universalização da inclusão digital para os estudantes da rede pública.
+
+% ==============================================================================
+% REFERÊNCIAS BIBLIOGRÁFICAS
+% ==============================================================================
+\begin{thebibliography}{9}
+
+\bibitem{bourdieu1970}
+BOURDIEU, P.; PASSERON, J.-C. \textbf{La reproduction}: éléments pour une théorie du système d'enseignement. Paris: Éditions de Minuit, 1970.
+
+\bibitem{ibge2024}
+IBGE. \textbf{Produto Interno Bruto dos Municípios 2021--2023}. Rio de Janeiro: Instituto Brasileiro de Geografia e Estatística, 2024.
+
+\bibitem{inep_censo}
+INEP. \textbf{Microdados do Censo Escolar da Educação Básica (2021--2023)}. Brasília: Inep, 2024.
+
+\bibitem{inep_enem}
+INEP. \textbf{Microdados do Exame Nacional do Ensino Médio (2021--2023)}. Brasília: Inep, 2024.
+
+\bibitem{moraes2014}
+MORAES, B.; BELLUZZO, W. O diferencial de desempenho entre escolas públicas e privadas no Brasil. \textbf{Revista Brasileira de Economia}, v.~68, n.~4, p.~451--475, 2014.
+
+\bibitem{oecd2019}
+OECD. \textbf{PISA 2018 Results (Volume I)}: What Students Know and Can Do. Paris: PISA, OECD Publishing, 2019.
+
+\bibitem{silveira2022}
+SILVEIRA, R.~F.; HOLANDA, M.; RAMOS, G.~N. Analysis of Student Performance and Social-economic Data in Introductory Computer Science Courses at the University of Brasília. In: \textbf{2022 IEEE Frontiers in Education Conference (FIE)}. Uppsala: IEEE, 2022. p.~1--8.
+
+\end{thebibliography}
+
+\end{document}

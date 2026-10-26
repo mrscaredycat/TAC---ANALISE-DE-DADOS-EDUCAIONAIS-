@@ -24,19 +24,33 @@ import zipfile
 import pandas as pd
 from pathlib import Path
 
-ARQUIVOS_CENSO = {
-    2021: {
-        "zip_path": Path("2021-2023/2021/microdados_censo_escolar_2021.zip"),
-        "csv_name": "microdados_ed_basica_2021/dados/microdados_ed_basica_2021.csv"
-    },
-    2022: {
-        "zip_path": Path("2021-2023/2022 E 2023/microdados_censo_escolar_2022.zip"),
-        "csv_name": "Microdados do Censo Escolar da Educaç╞o Básica 2022/dados/microdados_ed_basica_2022.csv"
-    },
-    2023: {
-        "zip_path": Path("2021-2023/2022 E 2023/microdados_censo_escolar_2023.zip"),
-        "csv_name": "microdados_censo_escolar_2023/dados/microdados_ed_basica_2023.csv"
-    }
+# Função auxiliar para localizar o arquivo ZIP em caminhos possíveis
+def localizar_zip(nome_padrao, caminhos_candidatos):
+    for c in caminhos_candidatos:
+        p = Path(c)
+        if p.exists():
+            return p
+    for match in Path(".").glob(f"**/{nome_padrao}"):
+        if match.is_file():
+            return match
+    return None
+
+CANDIDATOS_CENSO = {
+    2021: [
+        "microdados_censo_escolar_2021.zip",
+        "data/raw/microdados_censo_escolar_2021.zip",
+        "2021-2023/2021/microdados_censo_escolar_2021.zip"
+    ],
+    2022: [
+        "microdados_censo_escolar_2022.zip",
+        "data/raw/microdados_censo_escolar_2022.zip",
+        "2021-2023/2022 E 2023/microdados_censo_escolar_2022.zip"
+    ],
+    2023: [
+        "microdados_censo_escolar_2023.zip",
+        "data/raw/microdados_censo_escolar_2023.zip",
+        "2021-2023/2022 E 2023/microdados_censo_escolar_2023.zip"
+    ]
 }
 
 COLUNAS_CENSO = [
@@ -64,18 +78,29 @@ MAPA_DEPENDENCIA = {
     4: "Privada"
 }
 
-def processar_censo_ano(ano, config):
-    zip_path = config["zip_path"]
-    csv_name = config["csv_name"]
+def processar_censo_ano(ano, candidatos):
+    nome_zip = f"microdados_censo_escolar_{ano}.zip"
+    zip_path = localizar_zip(nome_zip, candidatos)
     
-    if not zip_path.exists():
+    if not zip_path:
         print(f"[ALERTA] ZIP do Censo {ano} não encontrado.")
         return None
         
-    print(f"\nLendo Censo {ano} a partir de: {zip_path.name}")
+    print(f"\nLendo Censo {ano} a partir de: {zip_path}")
     chunks_df = []
     
     with zipfile.ZipFile(zip_path, "r") as z:
+        # Detectar o arquivo de microdados de educação básica dentro do zip
+        alvos_csv = [f for f in z.namelist() if f.lower().endswith(f"microdados_ed_basica_{ano}.csv")]
+        if not alvos_csv:
+            alvos_csv = [f for f in z.namelist() if "microdados_ed_basica" in f.lower() and f.lower().endswith(".csv")]
+        if not alvos_csv:
+            print(f"[ERRO] Nenhum CSV de microdados do Censo encontrado em {zip_path.name}")
+            return None
+            
+        csv_name = alvos_csv[0]
+        print(f"Lendo internamente: {csv_name}")
+
         with z.open(csv_name) as f:
             for chunk in pd.read_csv(
                 f,
@@ -102,8 +127,8 @@ def executar_processamento_censo():
     dfs = []
     Path("data/processed").mkdir(parents=True, exist_ok=True)
     
-    for ano, cfg in ARQUIVOS_CENSO.items():
-        df_ano = processar_censo_ano(ano, cfg)
+    for ano, candidatos in CANDIDATOS_CENSO.items():
+        df_ano = processar_censo_ano(ano, candidatos)
         if df_ano is not None:
             dfs.append(df_ano)
             

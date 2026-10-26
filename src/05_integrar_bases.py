@@ -93,7 +93,18 @@ def preparar_base_modelagem():
     # Cor/Raça: Pretos, Pardos e Indígenas (PPI) = 1 (2: Preta, 3: Parda, 5: Indígena)
     df["COR_RACA_PPI"] = df["TP_COR_RACA"].isin([2, 3, 5]).astype(int)
 
-    # 6. Cruzamento com indicadores de infraestrutura por rede e ano (se existir)
+    # 6. Contexto Econômico do DF (IBGE - PIB dos Municípios 2021 a 2023)
+    # Valores correntes do PIB per capita do DF publicados pelo IBGE:
+    # 2021: R$ 92.732,27 | 2022: R$ 116.713,39 | 2023: R$ 129.790,44
+    MAPA_PIB_DF = {
+        2021: 92732.27,
+        2022: 116713.39,
+        2023: 129790.44
+    }
+    df["PIB_PER_CAPITA"] = df["NU_ANO"].map(MAPA_PIB_DF)
+    df["LOG_PIB_PER_CAPITA"] = np.log(df["PIB_PER_CAPITA"])
+
+    # 7. Cruzamento com indicadores de infraestrutura por rede e ano (Censo Escolar)
     if caminho_perfil.exists():
         perfil = pd.read_csv(caminho_perfil, sep=";", encoding="utf-8")
         mapa_dep = {1: "Federal", 2: "Pública Distrital", 4: "Privada"}
