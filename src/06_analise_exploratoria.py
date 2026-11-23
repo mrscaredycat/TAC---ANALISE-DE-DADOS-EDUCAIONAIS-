@@ -1,17 +1,4 @@
-"""
-================================================================================
-Etapa 06: Análise Exploratória e Visualizações (Seção 4.1 do Artigo)
-Artigo: Fatores Socioeconômicos e Educacionais e o Desempenho no ENEM (DF)
-================================================================================
 
-Gera os gráficos científicos em alta resolução (300 DPI) para o artigo:
-1. `heatmap_correlacoes.png`: Mapa de calor com coeficientes de correlação linear
-   entre nota de Matemática, escolaridade dos pais, renda e infraestrutura.
-2. `barras_nota_por_escolaridade_rede.png`: Gráfico de barras agrupadas comparando
-   a nota média por nível de escolaridade dos pais entre escolas públicas e privadas.
-3. `evolucao_desempenho_anos.png`: Desempenho médio no DF ao longo dos anos 2021 a 2023.
-4. `boxplot_renda_nota.png`: Distribuição das notas de matemática por faixas de renda familiar.
-"""
 
 import pandas as pd
 import numpy as np
@@ -19,7 +6,6 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from pathlib import Path
 
-# Configurações estéticas para gráficos padrão publicação científica
 plt.style.use("seaborn-v0_8-whitegrid" if "seaborn-v0_8-whitegrid" in plt.style.available else "default")
 plt.rcParams.update({
     "font.size": 11,
@@ -56,9 +42,6 @@ def gerar_graficos():
     df = pd.read_csv(caminho_base, sep=";", encoding="utf-8")
     print(f"Carregados {len(df):,} registros para análise exploratória.")
 
-    # -------------------------------------------------------------
-    # 1. Heatmap de Correlação (Inep + IBGE + Censo Escolar)
-    # -------------------------------------------------------------
     print("Gerando Heatmap de correlação...")
     cols_corr = [
         "NU_NOTA_MT",
@@ -77,7 +60,6 @@ def gerar_graficos():
     cols_existentes = [c for c in cols_corr if c in df.columns]
     corr_matrix = df[cols_existentes].corr()
     
-    # Rótulos legíveis em português para o artigo
     rotulos = {
         "NU_NOTA_MT": "Nota Matemática",
         "ESC_PAI_ANOS": "Escolaridade Pai",
@@ -110,9 +92,6 @@ def gerar_graficos():
     caminho_heatmap = pasta_figuras / "heatmap_correlacoes.png"
     salvar_figura(caminho_heatmap)
 
-    # -------------------------------------------------------------
-    # 2. Gráfico de Barras Agrupadas: MEDIANA da Nota MT por Escolaridade dos Pais e Rede
-    # -------------------------------------------------------------
     print("Gerando Gráfico de Barras Agrupadas (Mediana por Rede)...")
     df_valid = df.dropna(subset=["MAX_ESC_PAIS", "TP_ESCOLA", "NU_NOTA_MT"]).copy()
     df_valid = df_valid[df_valid["TP_ESCOLA"].isin([2, 3])]
@@ -151,9 +130,6 @@ def gerar_graficos():
     caminho_barras = pasta_figuras / "barras_mediana_escolaridade_rede.png"
     salvar_figura(caminho_barras)
 
-    # -------------------------------------------------------------
-    # 3. Gráfico de Barras Agrupadas: MEDIANA por Escolaridade e Localização (Urbana vs Rural)
-    # -------------------------------------------------------------
     print("Gerando Gráfico de Barras Agrupadas (Mediana por Localização Urbana/Rural)...")
     df_loc = df.dropna(subset=["MAX_ESC_PAIS", "TP_LOCALIZACAO_ESC", "NU_NOTA_MT"]).copy()
     df_loc["Localizacao"] = df_loc["TP_LOCALIZACAO_ESC"].map({1: "Urbana", 2: "Rural"})
@@ -182,9 +158,6 @@ def gerar_graficos():
         caminho_barras_loc = pasta_figuras / "barras_mediana_escolaridade_localizacao.png"
         salvar_figura(caminho_barras_loc)
 
-    # -------------------------------------------------------------
-    # 4. Gráfico de Barras Agrupadas: MEDIANA por Escolaridade e Acesso Digital (Computador/Internet)
-    # -------------------------------------------------------------
     print("Gerando Gráfico de Barras Agrupadas (Mediana por Recursos Digitais)...")
     df_dig = df.dropna(subset=["MAX_ESC_PAIS", "TEM_COMPUTADOR", "NU_NOTA_MT"]).copy()
     df_dig["Computador"] = df_dig["TEM_COMPUTADOR"].map({1: "Com Computador", 0: "Sem Computador"})
@@ -211,9 +184,6 @@ def gerar_graficos():
     caminho_barras_dig = pasta_figuras / "barras_mediana_escolaridade_computador.png"
     salvar_figura(caminho_barras_dig)
 
-    # -------------------------------------------------------------
-    # 5. Evolução Histórica das Médias (2021 a 2023)
-    # -------------------------------------------------------------
     print("Gerando Evolução Anual...")
     plt.figure(figsize=(8, 5))
     sns.lineplot(

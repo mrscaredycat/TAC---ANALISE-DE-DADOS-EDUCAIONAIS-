@@ -1,20 +1,8 @@
-"""
-================================================================================
-Etapa 01: Verificação de Ambiente e de Arquivos Brutos
-Artigo: Fatores Socioeconômicos e Educacionais e o Desempenho no ENEM (DF)
-================================================================================
-
-Este script tem como objetivos:
-1. Testar se as bibliotecas essenciais para análise de dados e machine learning estão instaladas.
-2. Mapear os arquivos presentes na pasta `data/raw/` (microdados do ENEM, Censo Escolar, INSE, PIB, etc.).
-3. Informar o status de prontidão para iniciarmos o processamento.
-"""
 
 import sys
 import os
 from pathlib import Path
 
-# Lista de pacotes necessários para o projeto
 PACOTES_REQUERIDOS = [
     ("pandas", "Manipulação de dados em tabelas"),
     ("numpy", "Operações numéricas matriciais"),

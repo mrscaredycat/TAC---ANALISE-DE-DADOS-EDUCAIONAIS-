@@ -16,3 +16,7 @@ __pycache__/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Fonte LaTeX de trabalho e material pessoal (NAO versionar)
+relatorio.tex
+GUIA-CAROL-APRESENTACAO.md

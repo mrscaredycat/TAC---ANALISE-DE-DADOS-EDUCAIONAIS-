@@ -1,28 +1,14 @@
-"""
-================================================================================
-Etapa 03: Filtragem e Extração dos Microdados do ENEM (2021 a 2023) para o DF
-Artigo: Fatores Socioeconômicos e Educacionais e o Desempenho no ENEM (DF)
-================================================================================
 
-Estratégia Otimizada:
-1. Lê diretamente dos arquivos .zip de 2021, 2022 e 2023 (sem precisar descompactar).
-2. Processa o CSV em streaming com pedaços (chunks) de 100.000 linhas.
-3. Filtra apenas os participantes do Distrito Federal (SG_UF_PROVA == 'DF').
-4. Mantém apenas quem compareceu à prova de Matemática (TP_PRESENCA_MT == 1 e NU_NOTA_MT não nula).
-5. Salva cada ano e o consolidado unificado em `data/processed/enem_df_2021_2023.csv`.
-"""
 
 import zipfile
 import pandas as pd
 from pathlib import Path
 
-# Função auxiliar para localizar o arquivo ZIP em caminhos possíveis
 def localizar_zip(nome_padrao, caminhos_candidatos):
     for c in caminhos_candidatos:
         p = Path(c)
         if p.exists():
             return p
-    # Busca recursiva se não achou direto
     for match in Path(".").glob(f"**/{nome_padrao}"):
         if match.is_file():
             return match
@@ -63,11 +49,11 @@ COLUNAS_SELECIONADAS = [
     "NU_NOTA_CH",
     "NU_NOTA_LC",
     "NU_NOTA_REDACAO",
-    "Q001",  # Escolaridade Pai
-    "Q002",  # Escolaridade Mãe
-    "Q006",  # Renda Familiar
-    "Q024",  # Computador
-    "Q025"   # Internet
+    "Q001",
+    "Q002",
+    "Q006",
+    "Q024",
+    "Q025"
 ]
 
 def filtrar_ano(ano, candidatos, chunksize=100000):
@@ -87,10 +73,8 @@ def filtrar_ano(ano, candidatos, chunksize=100000):
     total_df = 0
 
     with zipfile.ZipFile(zip_path, "r") as z:
-        # Detectar o arquivo de microdados dentro do zip
         alvos_csv = [f for f in z.namelist() if f.lower().endswith(f"microdados_enem_{ano}.csv")]
         if not alvos_csv:
-            # Fallback para qualquer CSV que contenha MICRODADOS_ENEM
             alvos_csv = [f for f in z.namelist() if "microdados_enem" in f.lower() and f.lower().endswith(".csv")]
         if not alvos_csv:
             print(f"[ERRO] Nenhum CSV de microdados encontrado dentro de {zip_path.name}")
@@ -110,16 +94,13 @@ def filtrar_ano(ano, candidatos, chunksize=100000):
             ):
                 total_lidas += len(chunk)
                 
-                # Filtro DF
                 filtro = chunk["SG_UF_PROVA"] == "DF"
                 sub = chunk[filtro].copy()
 
-                # Filtro Presença e Nota válida em Matemática
                 if "TP_PRESENCA_MT" in sub.columns and "NU_NOTA_MT" in sub.columns:
                     sub = sub[(sub["TP_PRESENCA_MT"] == 1) & (sub["NU_NOTA_MT"].notna())]
                 
                 if not sub.empty:
-                    # Garantir coluna do ano
                     if "NU_ANO" not in sub.columns:
                         sub["NU_ANO"] = ano
                     chunks_df.append(sub)

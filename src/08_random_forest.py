@@ -1,18 +1,4 @@
-"""
-================================================================================
-Etapa 08: Random Forest Regressor e Feature Importance (Seção 4.3 do Artigo)
-Artigo: Fatores Socioeconômicos e Educacionais e o Desempenho no ENEM (DF)
-================================================================================
 
-Objetivo:
-1. Treinar um modelo não linear (Random Forest Regressor) para predizer NU_NOTA_MT.
-2. Dividir a base em 70% Treino e 30% Teste com semente aleatória fixa (random_state=42).
-3. Avaliar as métricas de generalização (R², RMSE, MAE) no conjunto de teste.
-4. Extrair o Ranking de Importância Relativa das Variáveis (Feature Importance).
-5. Gerar o gráfico horizontal para a Seção 4.3 do artigo:
-   `resultados/figuras/ranking_importancia_variaveis.png`.
-6. Salvar a tabela em `resultados/tabelas/ranking_importancia_random_forest.csv`.
-"""
 
 import pandas as pd
 import numpy as np
@@ -56,13 +42,11 @@ def executar_random_forest():
     X = df_modelo[variaveis_X]
     y = df_modelo["NU_NOTA_MT"]
 
-    # Divisão 70% Treino e 30% Teste
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.30, random_state=42
     )
     print(f"Tamanho do Treino (70%): {len(X_train):,} | Tamanho do Teste (30%): {len(X_test):,}")
 
-    # Treinamento do Modelo Random Forest
     print("\nTreinando Random Forest Regressor (100 árvores)...")
     rf = RandomForestRegressor(
         n_estimators=100,
@@ -73,7 +57,6 @@ def executar_random_forest():
     )
     rf.fit(X_train, y_train)
 
-    # Avaliação no conjunto de Teste
     y_pred = rf.predict(X_test)
     r2 = r2_score(y_test, y_pred)
     rmse = root_mean_squared_error(y_test, y_pred)
@@ -87,7 +70,6 @@ def executar_random_forest():
     print(f"MAE  (Erro Absoluto Médio):           {mae:.2f} pontos")
     print("=" * 60)
 
-    # Extração de Feature Importance
     mapa_nomes = {
         "ESC_PAI_ANOS": "Escolaridade do Pai",
         "ESC_MAE_ANOS": "Escolaridade da Mãe",
@@ -112,17 +94,12 @@ def executar_random_forest():
     print("\nRANKING DE IMPORTÂNCIA DE VARIÁVEIS (FEATURE IMPORTANCE):")
     print(importancias.to_string(index=False))
 
-    # Salvar Tabela de Importâncias
     caminho_tabela = pasta_tabelas / "ranking_importancia_random_forest.csv"
     importancias.to_csv(caminho_tabela, index=False, sep=";", encoding="utf-8")
 
-    # -------------------------------------------------------------
-    # Tabela: Média e Mediana das Notas por Subcategoria (Rubrica UnB)
-    # -------------------------------------------------------------
     print("\nCalculando média e mediana de notas de Matemática por subcategoria...")
     linhas_subcategorias = []
 
-    # 1. Rede Escolar
     mapa_rede = {1: "Federal", 2: "Pública Distrital", 4: "Privada"}
     df["Rotulo_Rede"] = df["TP_DEPENDENCIA_ADM_ESC"].map(mapa_rede)
     for subcat, g in df.groupby("Rotulo_Rede")["NU_NOTA_MT"]:
@@ -135,7 +112,6 @@ def executar_random_forest():
             "Desvio_Padrao": round(g.std(), 2)
         })
 
-    # 2. Escolaridade Máxima dos Pais
     mapa_rotulos_esc = {
         0: "Sem estudo",
         4: "Fundamental I",
@@ -156,7 +132,6 @@ def executar_random_forest():
             "Desvio_Padrao": round(g.std(), 2)
         })
 
-    # 3. Posse de Computador
     df["Rotulo_PC"] = df["TEM_COMPUTADOR"].map({1: "Possui Computador", 0: "Não Possui"})
     for subcat, g in df.groupby("Rotulo_PC")["NU_NOTA_MT"]:
         linhas_subcategorias.append({
@@ -168,7 +143,6 @@ def executar_random_forest():
             "Desvio_Padrao": round(g.std(), 2)
         })
 
-    # 4. Localização da Escola
     df["Rotulo_Loc"] = df["TP_LOCALIZACAO_ESC"].map({1: "Urbana", 2: "Rural"})
     for subcat, g in df.dropna(subset=["Rotulo_Loc"]).groupby("Rotulo_Loc")["NU_NOTA_MT"]:
         linhas_subcategorias.append({
@@ -180,7 +154,6 @@ def executar_random_forest():
             "Desvio_Padrao": round(g.std(), 2)
         })
 
-    # 5. Cor/Raça
     df["Rotulo_Raca"] = df["COR_RACA_PPI"].map({1: "Pretos/Pardos/Indígenas (PPI)", 0: "Brancos/Amarelos"})
     for subcat, g in df.groupby("Rotulo_Raca")["NU_NOTA_MT"]:
         linhas_subcategorias.append({
@@ -197,7 +170,6 @@ def executar_random_forest():
     df_subcategorias.to_csv(caminho_subcat, index=False, sep=";", encoding="utf-8")
     print(f"Tabela de médias e medianas por subcategoria salva em: {caminho_subcat}")
 
-    # Gráfico de Barras Horizontal
     plt.figure(figsize=(10, 6))
     sns.barplot(
         data=importancias,

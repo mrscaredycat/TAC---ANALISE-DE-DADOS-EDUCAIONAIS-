@@ -1,15 +1,3 @@
-"""
-================================================================================
-Etapa 02: Inspeção de Colunas e Variáveis das Bases de Dados (2021 a 2023)
-Artigo: Fatores Socioeconômicos e Educacionais e o Desempenho no ENEM (DF)
-================================================================================
-
-Este script inspeciona os zips das pastas:
-- `2021-2023/2021/`
-- `2021-2023/2022 E 2023/`
-
-E lista os metadados e colunas sem precisar extrair gigabytes no disco.
-"""
 
 import zipfile
 import pandas as pd

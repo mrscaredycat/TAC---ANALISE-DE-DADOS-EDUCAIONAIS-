@@ -1,30 +1,9 @@
-"""
-================================================================================
-Etapa 04: Processamento do Censo Escolar (2021 a 2023) para o DF
-Artigo: Fatores Socioeconômicos e Educacionais e o Desempenho no ENEM (DF)
-================================================================================
 
-Objetivo:
-1. Ler os microdados do Censo Escolar da Educação Básica (2021, 2022 e 2023) direto dos arquivos .zip.
-2. Filtrar apenas as escolas situadas no Distrito Federal (SG_UF == 'DF').
-3. Extrair indicadores-chave de infraestrutura:
-   - IN_LABORATORIO_CIENCIAS
-   - IN_LABORATORIO_INFORMATICA
-   - IN_BIBLIOTECA
-   - IN_INTERNET
-   - IN_BANDA_LARGA
-   - IN_DESKTOP_ALUNO / QT_DESKTOP_ALUNO
-4. Gerar:
-   - A base completa das escolas do DF: `data/processed/censo_escolas_df_2021_2023.csv`
-   - O perfil consolidado de infraestrutura por rede (Federal, Distrital, Privada):
-     `data/processed/perfil_redes_df_infraestrutura.csv`
-"""
 
 import zipfile
 import pandas as pd
 from pathlib import Path
 
-# Função auxiliar para localizar o arquivo ZIP em caminhos possíveis
 def localizar_zip(nome_padrao, caminhos_candidatos):
     for c in caminhos_candidatos:
         p = Path(c)
@@ -60,8 +39,8 @@ COLUNAS_CENSO = [
     "SG_UF",
     "CO_MUNICIPIO",
     "NO_MUNICIPIO",
-    "TP_DEPENDENCIA",  # 1: Federal, 2: Distrital, 3: Municipal, 4: Privada
-    "TP_LOCALIZACAO",  # 1: Urbana, 2: Rural
+    "TP_DEPENDENCIA",
+    "TP_LOCALIZACAO",
     "IN_LABORATORIO_CIENCIAS",
     "IN_LABORATORIO_INFORMATICA",
     "IN_BIBLIOTECA",
@@ -90,7 +69,6 @@ def processar_censo_ano(ano, candidatos):
     chunks_df = []
     
     with zipfile.ZipFile(zip_path, "r") as z:
-        # Detectar o arquivo de microdados de educação básica dentro do zip
         alvos_csv = [f for f in z.namelist() if f.lower().endswith(f"microdados_ed_basica_{ano}.csv")]
         if not alvos_csv:
             alvos_csv = [f for f in z.namelist() if "microdados_ed_basica" in f.lower() and f.lower().endswith(".csv")]
@@ -138,7 +116,6 @@ def executar_processamento_censo():
         df_todas.to_csv(caminho_escolas, sep=";", index=False, encoding="utf-8")
         print(f"\nBase do Censo de Escolas do DF salva em: {caminho_escolas}")
         
-        # Gerar perfil de infraestrutura por rede
         df_todas["NOME_REDE"] = df_todas["TP_DEPENDENCIA"].map(MAPA_DEPENDENCIA)
         cols_infra = [
             "IN_LABORATORIO_CIENCIAS",

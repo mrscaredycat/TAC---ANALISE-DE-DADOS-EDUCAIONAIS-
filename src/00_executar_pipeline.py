@@ -1,16 +1,3 @@
-"""
-================================================================================
-Pipeline Completo: Artigo ENEM (2021 a 2023) - Distrito Federal
-Universidade de Brasília - UnB | Departamento de Ciência da Computação - CIC
-Autores: Ana Caroline Freitas Brito, Ana Sarah Nagata, Kamily Silva Andrade Crispim
-================================================================================
-
-Este script orquestra a execução de todas as análises do projeto de forma inteligente:
-1. Se a base processada `data/processed/base_final_modelagem.csv` já existir no repositório,
-   executa diretamente as análises estatísticas, o modelo Random Forest e compila o Artigo em PDF
-   (ideal para quem acabou de clonar o repositório no GitHub).
-2. Se os arquivos ZIP originais estiverem presentes, pode executar a extração bruta completa.
-"""
 
 import time
 import subprocess
@@ -45,23 +32,21 @@ def executar_tudo():
     if tem_zips and ("--full" in sys.argv or not base_processada.exists()):
         print("\n[MODO COMPLETO] Arquivos ZIP brutos detectados. Executando pipeline desde a extração bruta...")
         scripts_para_rodar = [
-            ("src/03_filtrar_enem_df.py", "1/7. Filtrando microdados do ENEM para o DF (2021-2023)"),
-            ("src/04_processar_censo_indicadores.py", "2/7. Processando Censo Escolar e Infraestrutura do DF"),
-            ("src/05_integrar_bases.py", "3/7. Integrando bases e criando engenharia de atributos"),
-            ("src/06_analise_exploratoria.py", "4/7. Gerando Heatmap e Gráficos Exploratórios"),
-            ("src/07_regressao_linear.py", "5/7. Rodando Regressão Linear Múltipla (OLS)"),
-            ("src/08_random_forest.py", "6/7. Rodando Random Forest e Feature Importance"),
-            ("src/gerar_artigo_pdf.py", "7/7. Compilando o Artigo Científico Completo em PDF")
+            ("src/03_filtrar_enem_df.py", "1/6. Filtrando microdados do ENEM para o DF (2021-2023)"),
+            ("src/04_processar_censo_indicadores.py", "2/6. Processando Censo Escolar e Infraestrutura do DF"),
+            ("src/05_integrar_bases.py", "3/6. Integrando bases e criando engenharia de atributos"),
+            ("src/06_analise_exploratoria.py", "4/6. Gerando Heatmap e Gráficos Exploratórios"),
+            ("src/07_regressao_linear.py", "5/6. Rodando Regressão Linear Múltipla (OLS)"),
+            ("src/08_random_forest.py", "6/6. Rodando Random Forest e Feature Importance")
         ]
     elif base_processada.exists():
         print("\n[MODO RÁPIDO/REPRODUTÍVEL] Base final processada detectada em:")
         print(f" -> {base_processada.resolve()}")
         print("[INFO] Executando Análise Exploratória, Regressão OLS, Random Forest e Artigo em PDF...\n")
         scripts_para_rodar = [
-            ("src/06_analise_exploratoria.py", "1/4. Gerando Heatmap e Gráficos Exploratórios (Figuras 1, 2 e 3)"),
-            ("src/07_regressao_linear.py", "2/4. Ajustando Regressão Linear OLS (Tabela 1)"),
-            ("src/08_random_forest.py", "3/4. Treinando Random Forest e Feature Importance (Figura 4 e Tabela 2)"),
-            ("src/gerar_artigo_pdf.py", "4/4. Compilando o Artigo Científico em PDF (Padrão UnB/SBC)")
+            ("src/06_analise_exploratoria.py", "1/3. Gerando Heatmap e Gráficos Exploratórios (Figuras 1, 2 e 3)"),
+            ("src/07_regressao_linear.py", "2/3. Ajustando Regressão Linear OLS (Tabela 1)"),
+            ("src/08_random_forest.py", "3/3. Treinando Random Forest e Feature Importance (Figura 4 e Tabela 2)")
         ]
     else:
         print("\n[AVISO] Base processada e arquivos ZIP não encontrados!")
@@ -83,8 +68,7 @@ def executar_tudo():
     print("Arquivos gerados e atualizados:")
     print(" - Figuras prontas em:      resultados/figuras/")
     print(" - Tabelas estatísticas em: resultados/tabelas/")
-    print(" - Artigo em PDF:           Artigo_Completo_ENEM_DF_UnB.pdf")
-    print(" - Código LaTeX:            artigo_enem_df.tex")
+    print("[INFO] O artigo final é compilado em LaTeX a partir de relatorio.tex -> ARTIGO.pdf")
     print("=" * 75)
 
 if __name__ == "__main__":

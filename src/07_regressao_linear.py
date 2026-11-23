@@ -1,23 +1,3 @@
-"""
-================================================================================
-Etapa 07: Regressão Linear Múltipla (Seção 4.2 do Artigo)
-Artigo: Fatores Socioeconômicos e Educacionais e o Desempenho no ENEM (DF)
-================================================================================
-
-Objetivo:
-Estimar o efeito estatístico simultâneo dos fatores socioeconômicos e educacionais
-sobre a nota de Matemática (NU_NOTA_MT), controlando por outras variáveis.
-
-Modelo Estatístico:
-NU_NOTA_MT = β0 + β1(ESC_PAI) + β2(ESC_MAE) + β3(LOG_RENDA) + β4(TEM_COMPUTADOR)
-              + β5(TEM_INTERNET) + β6(ESCOLA_PRIVADA) + β7(ESCOLA_FEDERAL)
-              + β8(ESCOLA_URBANA) + β9(COR_RACA_PPI) + β10(SEXO_FEMININO)
-              + β11(ANO_2022) + β12(ANO_2023) + ε
-
-Saídas:
-1. `resultados/tabelas/regressao_linear_coeficientes.csv`
-2. `resultados/tabelas/regressao_linear_resumo.txt` (Resumo OLS completo)
-"""
 
 import pandas as pd
 import numpy as np
@@ -35,7 +15,6 @@ def executar_regressao():
         
     df = pd.read_csv(caminho_base, sep=";", encoding="utf-8")
     
-    # Criar dummies para os anos
     df["ANO_2022"] = (df["NU_ANO"] == 2022).astype(int)
     df["ANO_2023"] = (df["NU_ANO"] == 2023).astype(int)
 
@@ -54,22 +33,19 @@ def executar_regressao():
         "ANO_2023"
     ]
     
-    # Remover linhas com valores ausentes nas variáveis do modelo
     df_modelo = df.dropna(subset=["NU_NOTA_MT"] + variaveis_X).copy()
     print(f"Amostra total usada na regressão: {len(df_modelo):,} estudantes do DF.")
 
     X = df_modelo[variaveis_X]
-    X = sm.add_constant(X)  # Adiciona o intercepto β0
+    X = sm.add_constant(X)
     y = df_modelo["NU_NOTA_MT"]
 
-    # Ajuste do Modelo por Mínimos Quadrados Ordinários (OLS)
     modelo = sm.OLS(y, X).fit()
     print("\n" + "=" * 70)
     print("RESUMO DA REGRESSÃO LINEAR MÚLTIPLA (OLS):")
     print("=" * 70)
     print(modelo.summary())
 
-    # Formatar tabela de coeficientes para o artigo
     tabela_coef = pd.DataFrame({
         "Variável": modelo.params.index,
         "Coeficiente (Beta)": modelo.params.values,
@@ -80,7 +56,6 @@ def executar_regressao():
         "IC_Superior_95%": modelo.conf_int()[1].values
     })
 
-    # Rótulos amigáveis para publicação
     mapa_nomes = {
         "const": "Intercepto (Constante)",
         "ESC_PAI_ANOS": "Escolaridade Pai (anos de estudo)",
@@ -98,7 +73,6 @@ def executar_regressao():
     }
     tabela_coef["Nome_Artigo"] = tabela_coef["Variável"].map(mapa_nomes).fillna(tabela_coef["Variável"])
     
-    # Salvar resultados
     caminho_csv = pasta_tabelas / "regressao_linear_coeficientes.csv"
     tabela_coef.to_csv(caminho_csv, index=False, sep=";", encoding="utf-8")
     
